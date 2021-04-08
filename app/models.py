@@ -12,6 +12,79 @@ class Permission:
     EDIT_USER = 4
     ADMIN = 8
 
+class Gender:
+    MALE = 1
+    FEMALE = 2
+
+class Status:
+    UNDER_REVIEW = 1
+    TURN_DOWN = 2
+    AGREE = 4
+
+class LeaveTypes(db.Model):
+    __tablename__ = 'leave_types'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+    permissions = db.Column(db.Integer)
+    leave_logs = db.relationship('LeaveLogs', backref='type', lazy='dynamic')
+
+    def __init__(self, **kwargs):
+        super(LeaveTypes, self).__init__(**kwargs)
+        if self.permissions is None:
+            self.permissions = 0
+
+    @staticmethod
+    def insert_leave_type():
+        leaveTypes = {
+            '事假': [Gender.MALE, Gender.FEMALE],
+            '病假': [Gender.MALE, Gender.FEMALE],
+            '生理假': [Gender.FEMALE],
+            '特休假': [Gender.MALE, Gender.FEMALE],
+            '婚假': [Gender.MALE, Gender.FEMALE],
+            '喪假': [Gender.MALE, Gender.FEMALE],
+            '產假/陪產假': [Gender.MALE, Gender.FEMALE],
+            '公假': [Gender.MALE, Gender.FEMALE],
+        }
+        for t in leaveTypes:
+            leaveType = LeaveTypes.query.filter_by(name=t).first()
+            if leaveType is None:
+                leaveType = LeaveTypes(name=t)
+            leaveType.reset_permissions()
+            for perm in leaveTypes[t]:
+                leaveType.add_permission(perm)
+            db.session.add(leaveType)
+        db.session.commit()
+    
+    def add_permission(self, perm):
+        if not self.has_permission(perm):
+            self.permissions += perm
+
+    def reset_permissions(self):
+        self.permissions = 0
+
+    def has_permission(self, perm):
+        return self.permissions & perm == perm
+
+    def __repr__(self):
+        return '<LeaveTypes %r>' % self.name
+
+class LeaveLogs(db.Model):
+    __tablename__ = 'leave_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    start = db.Column(db.DateTime)
+    end = db.Column(db.DateTime)
+    duration = db.Column(db.Float)
+    reason = db.Column(db.Text)
+    status = db.Column(db.Integer)
+    type_id = db.Column(db.Integer, db.ForeignKey('leave_types.id'))
+    staff_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    agent_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    def __init__(self, **kwargs):
+        super(LeaveLogs, self).__init__(**kwargs)
+        if self.status is None:
+            self.status = Status.UNDER_REVIEW
+
 class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
@@ -72,6 +145,16 @@ class User(UserMixin, db.Model):
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     avatar_hash = db.Column(db.String(32))
+    ask_leave = db.relationship('LeaveLogs',
+                foreign_keys=[LeaveLogs.staff_id],
+                backref=db.backref('staff', lazy='joined'),
+                lazy='dynamic',
+                cascade='all, delete-orphan')
+    agent = db.relationship('LeaveLogs',
+            foreign_keys=[LeaveLogs.agent_id],
+            backref=db.backref('agent', lazy='joined'),
+            lazy='dynamic',
+            cascade='all, delete-orphan')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
