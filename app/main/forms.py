@@ -4,7 +4,7 @@ from wtforms import StringField, TextAreaField, BooleanField, SelectField,\
     SubmitField
 from wtforms.fields.html5 import DateField, TimeField
 from wtforms.validators import DataRequired, Length, Email, Regexp
-from ..models import LeaveTypes, Department, User
+from ..models import LeaveType, Department, User
 
 class MainForm(FlaskForm):
     pass
@@ -22,7 +22,7 @@ class AskLeaveForm(FlaskForm):
     def __init__(self, user, *args, **kwargs):
         super(AskLeaveForm, self).__init__(*args, **kwargs)
         self.leave_type.choices = [(t.id, t.name)
-                                    for t in LeaveTypes.query.order_by(LeaveTypes.id).all()
+                                    for t in LeaveType.query.order_by(LeaveType.id).all()
                                     if t.has_permission(user.gender)]
         self.agents.choices = [(u.id, u.username)
                                 for u in User.query.filter_by(department_id=user.department_id).all()

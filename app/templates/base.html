@@ -25,8 +25,8 @@
                 <li><a href="{{ url_for('main.index') }}">首頁</a></li>
                 {% if current_user.is_authenticated %}
                 {% if current_user.can(Permission.ASK_LEAVE) %}
-                <li><a href="{{ url_for('main.askLeave', username=current_user.username) }}">請假</a></li>
-                <li><a href="{{ url_for('main.index') }}">請假紀錄</a></li>
+                <li><a href="{{ url_for('main.askLeave') }}">請假</a></li>
+                <li><a href="{{ url_for('main.leaveLog') }}">請假紀錄</a></li>
                 <li><a href="{{ url_for('main.index') }}">特休</a></li>
                 {% endif %}
                 {% if current_user.can(Permission.EDIT_USER) %}
