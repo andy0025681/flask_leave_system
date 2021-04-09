@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from . import main
 from .forms import MainForm, AskLeaveForm
 from .. import db
-from ..models import Permission, User, LeaveLog
+from ..models import Permission, User, LeaveLog, Time
 
 @main.route('/', methods=['GET', 'POST'])
 @login_required
@@ -19,10 +19,10 @@ def index():
 def askLeave():
     form = AskLeaveForm(current_user._get_current_object())
     if current_user.can(Permission.ASK_LEAVE) and form.validate_on_submit():
-        log = LeaveLog(
-                start=datetime.strptime("{} {}".format(form.startDate.data, form.startTime.data), "%Y-%m-%d %H:%M:%S"),
-				end=datetime.strptime("{} {}".format(form.endDate.data, form.endTime.data), "%Y-%m-%d %H:%M:%S"),
-				duration=8.0, reason=form.reason.data, type_id=form.leave_type.data, staff_id=current_user.id, agent_id=form.agents.data)
+        start = datetime.strptime("{} {}".format(form.startDate.data, form.startTime.data), "%Y-%m-%d %H:%M:%S")
+        end=datetime.strptime("{} {}".format(form.endDate.data, form.endTime.data), "%Y-%m-%d %H:%M:%S")
+        log = LeaveLog( start=start, end=end, duration=round(Time.workingHours_days(start, end)/3600, 2), 
+                        reason=form.reason.data, type_id=form.leave_type.data, staff_id=current_user.id, agent_id=form.agents.data)
         db.session.add(log)
         db.session.commit()
         flash('Your leave request has been under review.')

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import hashlib
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
@@ -20,6 +20,68 @@ class Status:
     UNDER_REVIEW = 1
     TURN_DOWN = 2
     AGREE = 4
+
+class Time():
+    @staticmethod
+    def workday():
+        return True
+
+    @staticmethod
+    def workingHours_day(start, end):
+        fmt = '%H:%M:%S'
+        st = datetime.strptime(start, fmt)
+        et = datetime.strptime(end, fmt)
+        noon = datetime.strptime('12:00:00', fmt)
+        afterNoon = datetime.strptime('13:00:00', fmt)
+        evening = datetime.strptime('18:00:00', fmt)
+        if(st >= et or st > evening):
+            return 0
+        elif(st < datetime.strptime('09:00:00', fmt)):
+            st = datetime.strptime('09:00:00', fmt)
+        if(st < noon):
+            if(et < noon):
+                return (et-st).seconds
+            elif(et <= afterNoon):
+                return (noon-st).seconds
+            elif(et < evening):
+                return (noon-st).seconds + (et-afterNoon).seconds
+            else:
+                return (noon-st).seconds + (evening-afterNoon).seconds
+        else:
+            if(st > afterNoon):
+                if(et < evening):
+                    return (et-st).seconds
+                else:
+                    return (evening-st).seconds
+            else:
+                if(et < evening):
+                    return (et-afterNoon).seconds
+                else:
+                    return (evening-afterNoon).seconds
+    
+    @staticmethod
+    def workingHours_days(start, end):
+        seconds = 0
+        if(start >= end):
+            return 0
+        sd = date = datetime.strptime(start.strftime('%Y-%m-%d'), '%Y-%m-%d')
+        ed = datetime.strptime(end.strftime('%Y-%m-%d'), '%Y-%m-%d')
+        while(date <= ed):
+            # if(not Time.workday() and (date.weekday() >= 5 and not Time.workday())):
+            if(date.weekday() >= 5):
+                date += timedelta(days=1)
+                continue
+            if(date == sd):
+                if(sd == ed):
+                    seconds += Time.workingHours_day(start.strftime('%H:%M:%S'), end.strftime('%H:%M:%S'))
+                else:
+                    seconds += Time.workingHours_day(start.strftime('%H:%M:%S'), '18:00:00')
+            elif(date == ed):
+                seconds += Time.workingHours_day('09:00:00', end.strftime('%H:%M:%S'))
+            else:
+                seconds += 8*60*60
+            date += timedelta(days=1)
+        return seconds
 
 class LeaveType(db.Model):
     __tablename__ = 'leave_types'

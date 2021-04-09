@@ -13,9 +13,9 @@ class AskLeaveForm(FlaskForm):
     leave_type = SelectField('假別:', coerce=int, validators=[DataRequired()])
     agents = SelectField('職務代理人:', coerce=int, validators=[DataRequired()])
     startDate = DateField('起始日期:', default=datetime.today(), validators=[DataRequired()])
-    startTime = TimeField('結束時間:', default=datetime.now(), validators=[DataRequired()])
+    startTime = TimeField('起始時間:', default=datetime.strptime('09:00:00', '%H:%M:%S'), validators=[DataRequired()])
     endDate = DateField('結束日期:', default=datetime.today(), validators=[DataRequired()])
-    endTime = TimeField('結束時間:', default=datetime.now(), validators=[DataRequired()])
+    endTime = TimeField('結束時間:', default=datetime.strptime('18:00:00', '%H:%M:%S'), validators=[DataRequired()])
     reason = TextAreaField('請假原因:', validators=[DataRequired()])
     submit = SubmitField('Submit')
 
