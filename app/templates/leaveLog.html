@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+
+{% block title %}Leave System - 請假紀錄{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    
+</div>
+<div class="col-md-4">
+</div>
+<div class="post-tabs">
+    
+    {% include '_leaveLogs.html' %}
+</div>
+{% if pagination %}
+<div class="pagination">
+    {{ macros.pagination_widget(pagination, '.leaveLog') }}
+</div>
+{% endif %}
+{% endblock %}
+

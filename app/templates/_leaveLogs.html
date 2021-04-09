@@ -1,0 +1,38 @@
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">類型</th>
+            <th scope="col">期間</th>
+            <th scope="col">時長</th>
+            <th scope="col">狀態</th>
+            <th scope="col">說明</th>
+            <th scope="col"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for leaveLog in leaveLogs %}
+        <tr>
+            <!-- 類型 -->
+            <td>{{ leaveLog.type.name }}</td>
+            <!-- 期間 -->
+            <td>
+                <p>{{ leaveLog.start }} ~ {{ leaveLog.end }}</p>
+            </td>
+            <!-- 時長 -->
+            <td>{{ leaveLog.duration }}</td>
+            <!-- 狀態 -->
+            {% if leaveLog.status == Status.UNDER_REVIEW %}
+            <td>審核中</td>
+            {% elif leaveLog.status == Status.TURN_DOWN %}
+            <td>駁回</td>
+            {% elif leaveLog.status == Status.AGREE %}
+            <td>同意</td>
+            {% endif %}
+            <!-- 更動 -->
+            <td>{{ leaveLog.reason }}</td>
+            <!-- 時間戳 -->
+            <td>{{ moment(leaveLog.timestamp).fromNow() }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
