@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import render_template, redirect, url_for, flash, request, current_app
+from flask import render_template, redirect, url_for, flash, request, current_app, make_response
 from flask_login import login_required, current_user
 from . import main
 from .forms import MainForm, AskLeaveForm
@@ -33,8 +33,28 @@ def askLeave():
 @login_required
 def leaveLog():
     page = request.args.get('page', 1, type=int)
-    pagination = current_user.ask_leave.order_by(LeaveLog.timestamp.desc()).paginate(
+    agent_record = False
+    agent_record = bool(request.cookies.get('agent_record', ''))
+    if agent_record:
+        query = current_user.agent
+    else:
+        query = current_user.ask_leave
+    pagination = query.order_by(LeaveLog.timestamp.desc()).paginate(
         page, per_page=current_app.config['FLASKY_LEAVE_LOG_PER_PAGE'],
         error_out=False)
     leaveLogs = pagination.items
-    return render_template('leaveLog.html', leaveLogs=leaveLogs, pagination=pagination)
+    return render_template('leaveLog.html', leaveLogs=leaveLogs, agent_record=agent_record, pagination=pagination)
+
+@main.route('/agent')
+@login_required
+def show_agent_record():
+    resp = make_response(redirect(url_for('.leaveLog')))
+    resp.set_cookie('agent_record', '', max_age=30*24*60*60)
+    return resp
+
+@main.route('/leave')
+@login_required
+def show_leave_log():
+    resp = make_response(redirect(url_for('.leaveLog')))
+    resp.set_cookie('agent_record', '1', max_age=30*24*60*60)
+    return resp
