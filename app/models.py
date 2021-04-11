@@ -9,7 +9,7 @@ from . import db, login_manager
 
 class Permission:
     ASK_LEAVE = 1
-    PASS_LEAVE = 2
+    REVIEW_LEAVE = 2
     EDIT_USER = 4
     ADMIN = 8
 
@@ -186,7 +186,6 @@ class OfficalLeave:
         offLeave = OfficalLeave.seniorityToLeave(firstDay, thisYear)
         seniorityRange = 6 if offLeave <= 3 else 12
         result = offLeave - (OfficalLeave.yearProportion(firstDay, seniorityRange) * offLeave)
-        print("{} - ({} * {})".format(offLeave, OfficalLeave.yearProportion(firstDay, seniorityRange), offLeave))
         result = round(round(round(result, 3), 2), 1)
         return [start, end, result]
 
@@ -401,7 +400,7 @@ class Department(db.Model):
                 
     def __init__(self, **kwargs):
         super(Department, self).__init__(**kwargs)
-
+    
     @staticmethod
     def insert_department():
         departments = {
@@ -423,6 +422,12 @@ class Department(db.Model):
             db.session.add(department)
         db.session.commit()
 
+    def supervisor(self):
+        for user in self.users:
+            if user.can(Permission.REVIEW_LEAVE):
+                return user
+        return False
+
     def __repr__(self):
         return '<LeaveType %r>' % self.name
 
@@ -443,8 +448,8 @@ class Role(db.Model):
     def insert_roles():
         roles = {
             'Staff': [Permission.ASK_LEAVE],
-            'Supervisor': [Permission.ASK_LEAVE, Permission.PASS_LEAVE],
-            'Administrator': [Permission.ASK_LEAVE, Permission.PASS_LEAVE,
+            'Supervisor': [Permission.ASK_LEAVE, Permission.REVIEW_LEAVE],
+            'Administrator': [Permission.ASK_LEAVE, Permission.REVIEW_LEAVE,
                               Permission.EDIT_USER, Permission.ADMIN],
         }
         default_role = 'Staff'

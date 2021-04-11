@@ -75,10 +75,13 @@ def askLeave():
                         reason=form.reason.data, type_id=form.leave_type.data, staff_id=current_user.id, agent_id=form.agents.data)
         db.session.add(log)
         db.session.commit()
-        agree_token = current_user.generate_review_leave_token(log, Status.AGREE)
-        turn_down_token = current_user.generate_review_leave_token(log, Status.TURN_DOWN)
-        send_email(current_user.email, '請假申請函',
-                   'email/askLeave', user=current_user, applicant=current_user, leaveLog=log, agree_token=agree_token, turn_down_token=turn_down_token)
+        reviewer = current_user.deparement.supervisor() \
+            if not current_user.can(Permission.REVIEW_LEAVE) and current_user.deparement.supervisor() \
+                else User.query.filter_by(email=current_app.config['FLASKY_ADMIN']).first_or_404()
+        agree_token = reviewer.generate_review_leave_token(log, Status.AGREE)
+        turn_down_token = reviewer.generate_review_leave_token(log, Status.TURN_DOWN)
+        send_email(reviewer.email, '請假申請函',
+                   'email/askLeave', user=reviewer, applicant=current_user, leaveLog=log, agree_token=agree_token, turn_down_token=turn_down_token)
         flash('Your leave request has been under review.')
         return redirect(url_for('.askLeave'))
     return render_template('askLeave.html', form=form)
