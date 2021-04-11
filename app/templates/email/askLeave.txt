@@ -1,5 +1,5 @@
 嗨 {{ user.username }},
-{{ applicant.deparement.name }}的{{ applicant.username }}申請{{ leaveLog.type.name }}
+{{ applicant.department.name }}的{{ applicant.username }}申請{{ leaveLog.type.name }}
 從{{ leaveLog.start }} ~ {{ leaveLog.end }}
 原因是:
 {{ leaveLog.reason }}

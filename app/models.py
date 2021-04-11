@@ -245,6 +245,7 @@ class LeaveLog(db.Model):
     reason = db.Column(db.Text)
     status = db.Column(db.Integer)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    department_id = db.Column(db.Integer, db.ForeignKey('departments.id'))
     type_id = db.Column(db.Integer, db.ForeignKey('leave_types.id'))
     staff_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     agent_id = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -263,7 +264,7 @@ class User(UserMixin, db.Model):
     location = db.Column(db.String(64))
     about_me = db.Column(db.Text())
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
-    department_id = db.Column(db.Integer, db.ForeignKey('deparements.id'))
+    department_id = db.Column(db.Integer, db.ForeignKey('departments.id'))
     password_hash = db.Column(db.String(128))
     firstDay = db.Column(db.DateTime)
     off_leave_start = db.Column(db.DateTime)
@@ -393,10 +394,11 @@ class User(UserMixin, db.Model):
         return '<User %r>' % self.username
 
 class Department(db.Model):
-    __tablename__ = 'deparements'
+    __tablename__ = 'departments'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
-    users = db.relationship('User', backref='deparement', lazy='dynamic')
+    users = db.relationship('User', backref='department', lazy='dynamic')
+    leaveLogs = db.relationship('LeaveLog', backref='department', lazy='dynamic')
                 
     def __init__(self, **kwargs):
         super(Department, self).__init__(**kwargs)

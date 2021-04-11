@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import render_template, redirect, url_for, flash, request, current_app, make_response
+from flask import render_template, redirect, url_for, abort, flash, request, current_app, make_response
 from flask_login import login_required, current_user
 from . import main
 from .forms import MainForm, EditProfileForm, EditProfileAdminForm, AskLeaveForm
@@ -71,12 +71,12 @@ def askLeave():
     if current_user.can(Permission.ASK_LEAVE) and form.validate_on_submit():
         start = datetime.strptime("{} {}".format(form.startDate.data, form.startTime.data), "%Y-%m-%d %H:%M:%S")
         end=datetime.strptime("{} {}".format(form.endDate.data, form.endTime.data), "%Y-%m-%d %H:%M:%S")
-        log = LeaveLog( start=start, end=end, duration=round(Time.workingHours_days(start, end)/3600, 2), 
-                        reason=form.reason.data, type_id=form.leave_type.data, staff_id=current_user.id, agent_id=form.agents.data)
+        log = LeaveLog( start=start, end=end, duration=round(Time.workingHours_days(start, end)/3600, 2), reason=form.reason.data, 
+                        department_id= current_user.department_id, type_id=form.leave_type.data, staff_id=current_user.id, agent_id=form.agents.data)
         db.session.add(log)
         db.session.commit()
-        reviewer = current_user.deparement.supervisor() \
-            if not current_user.can(Permission.REVIEW_LEAVE) and current_user.deparement.supervisor() \
+        reviewer = current_user.department.supervisor() \
+            if not current_user.can(Permission.REVIEW_LEAVE) and current_user.department.supervisor() \
                 else User.query.filter_by(email=current_app.config['FLASKY_ADMIN']).first_or_404()
         agree_token = reviewer.generate_review_leave_token(log, Status.AGREE)
         turn_down_token = reviewer.generate_review_leave_token(log, Status.TURN_DOWN)
@@ -100,28 +100,48 @@ def reviewLeave(token):
 @login_required
 def leaveLog():
     page = request.args.get('page', 1, type=int)
-    agent_record = False
-    agent_record = bool(request.cookies.get('agent_record', ''))
-    if agent_record:
+    log_status = request.cookies.get('log_status', '')
+    if log_status == '0':
+        query = LeaveLog.query
+    elif log_status == '1':
+        query = current_user.ask_leave
+    elif log_status == '2':
         query = current_user.agent
     else:
-        query = current_user.ask_leave
+        query = current_user.department.leaveLogs
     pagination = query.order_by(LeaveLog.timestamp.desc()).paginate(
         page, per_page=current_app.config['FLASKY_LEAVE_LOG_PER_PAGE'],
         error_out=False)
     leaveLogs = pagination.items
-    return render_template('leaveLog.html', leaveLogs=leaveLogs, agent_record=agent_record, pagination=pagination)
+    return render_template('leaveLog.html', leaveLogs=leaveLogs, log_status=log_status, pagination=pagination)
 
-@main.route('/agent')
+@main.route('/allLog')
 @login_required
-def show_agent_record():
+@admin_required
+def show_all_log():
     resp = make_response(redirect(url_for('.leaveLog')))
-    resp.set_cookie('agent_record', '', max_age=30*24*60*60)
+    resp.set_cookie('log_status', '0', max_age=30*24*60*60)
     return resp
 
-@main.route('/leave')
+@main.route('/selfLog')
 @login_required
-def show_leave_log():
+def show_self_log():
     resp = make_response(redirect(url_for('.leaveLog')))
-    resp.set_cookie('agent_record', '1', max_age=30*24*60*60)
+    resp.set_cookie('log_status', '1', max_age=30*24*60*60)
+    return resp
+
+@main.route('/agentLog')
+@login_required
+def show_agent_log():
+    resp = make_response(redirect(url_for('.leaveLog')))
+    resp.set_cookie('log_status', '2', max_age=30*24*60*60)
+    return resp
+
+@main.route('/departmentLog')
+@login_required
+def show_department_log():
+    if not current_user.can(Permission.REVIEW_LEAVE):
+        abort(403)
+    resp = make_response(redirect(url_for('.leaveLog')))
+    resp.set_cookie('log_status', '3', max_age=30*24*60*60)
     return resp

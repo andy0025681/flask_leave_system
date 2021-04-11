@@ -10,8 +10,14 @@
 </div>
 <div class="post-tabs">
     <ul class="nav nav-tabs">
-        <li{% if not agent_record %} class="active"{% endif %}><a href="{{ url_for('.show_agent_record') }}">請假紀錄</a></li>
-        <li{% if agent_record %} class="active"{% endif %}><a href="{{ url_for('.show_leave_log') }}">代理</a></li>
+        {% if current_user.can(Permission.ADMIN) %}
+            <li{% if log_status == '0' %} class="active"{% endif %}><a href="{{ url_for('.show_all_log') }}">所有同仁</a></li>
+        {% endif %}
+        <li{% if log_status == '1' %} class="active"{% endif %}><a href="{{ url_for('.show_self_log') }}">請假紀錄</a></li>
+        <li{% if log_status == '2' %} class="active"{% endif %}><a href="{{ url_for('.show_agent_log') }}">代理</a></li>
+        {% if current_user.can(Permission.REVIEW_LEAVE) %}
+        <li{% if log_status == '3' %} class="active"{% endif %}><a href="{{ url_for('.show_department_log') }}">部門</a></li>
+        {% endif %}
     </ul>
     {% include '_leaveLogs.html' %}
 </div>
