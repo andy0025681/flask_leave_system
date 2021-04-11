@@ -1,6 +1,7 @@
 <table class="table">
     <thead>
         <tr>
+            {% if agent_record %}<th scope="col">申請者</th>{% endif %}
             <th scope="col">類型</th>
             <th scope="col">期間</th>
             <th scope="col">時長</th>
@@ -12,6 +13,8 @@
     <tbody>
         {% for leaveLog in leaveLogs %}
         <tr>
+            <!-- 申請者 -->
+            {% if agent_record %}<td>{{ leaveLog.staff.username }}</td>{% endif %}
             <!-- 類型 -->
             <td>{{ leaveLog.type.name }}</td>
             <!-- 期間 -->

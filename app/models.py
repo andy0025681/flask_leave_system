@@ -349,6 +349,27 @@ class User(UserMixin, db.Model):
         db.session.add(self)
         return True
 
+    def generate_review_leave_token(self, leaveLog, status, expiration=3600*8):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps({'admin_id': self.id, 'leaveLog': leaveLog.id, 'status': status}).decode('utf-8')
+    
+    def review_leave(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token.encode('utf-8'))
+        except:
+            return False
+        if data.get('admin_id') != self.id:
+            return False
+        if data.get('status') != Status.TURN_DOWN and data.get('status') != Status.AGREE:
+            return False
+        leaveLog = LeaveLog.query.filter_by(id=data.get('leaveLog')).first()
+        if leaveLog is None:
+            return False
+        leaveLog.status = data.get('status')
+        db.session.add(leaveLog)
+        return True
+
     def can(self, perm):
         return self.role is not None and self.role.has_permission(perm)
 

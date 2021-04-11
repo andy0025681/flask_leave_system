@@ -1,0 +1,11 @@
+嗨 {{ user.username }},
+{{ applicant.deparement.name }}的{{ applicant.username }}申請{{ leaveLog.type.name }}
+從{{ leaveLog.start }} ~ {{ leaveLog.end }}
+原因是:
+{{ leaveLog.reason }}
+職務代理人是{{ leaveLog.agent.name }}
+請問要:
+同意:
+{{ url_for('main.reviewLeave', token=agree_token, _external=True) }}
+駁回:
+{{ url_for('main.reviewLeave', token=turn_down_token, _external=True) }}

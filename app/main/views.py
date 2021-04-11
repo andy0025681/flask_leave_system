@@ -4,7 +4,8 @@ from flask_login import login_required, current_user
 from . import main
 from .forms import MainForm, EditProfileForm, EditProfileAdminForm, AskLeaveForm
 from .. import db
-from ..models import Permission, User, Role, LeaveLog, Time
+from ..models import Permission, User, Role, LeaveLog, Time, Status
+from ..email import send_email
 from ..decorators import admin_required, permission_required
 
 @main.route('/', methods=['GET', 'POST'])
@@ -74,9 +75,23 @@ def askLeave():
                         reason=form.reason.data, type_id=form.leave_type.data, staff_id=current_user.id, agent_id=form.agents.data)
         db.session.add(log)
         db.session.commit()
+        agree_token = current_user.generate_review_leave_token(log, Status.AGREE)
+        turn_down_token = current_user.generate_review_leave_token(log, Status.TURN_DOWN)
+        send_email(current_user.email, '請假申請函',
+                   'email/askLeave', user=current_user, applicant=current_user, leaveLog=log, agree_token=agree_token, turn_down_token=turn_down_token)
         flash('Your leave request has been under review.')
         return redirect(url_for('.askLeave'))
     return render_template('askLeave.html', form=form)
+
+@main.route('/reviewLeave/<token>')
+@login_required
+def reviewLeave(token):
+    if current_user.review_leave(token):
+        db.session.commit()
+        flash('You have updated the vacation log. Thanks!')
+    else:
+        flash('The review leave link is invalid or has expired.')
+    return redirect(url_for('main.index'))
 
 @main.route('/leaveLog', methods=['GET', 'POST'])
 @login_required
