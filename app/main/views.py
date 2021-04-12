@@ -71,6 +71,10 @@ def askLeave():
     if current_user.can(Permission.ASK_LEAVE) and form.validate_on_submit():
         start = datetime.strptime("{} {}".format(form.startDate.data, form.startTime.data), "%Y-%m-%d %H:%M:%S")
         end=datetime.strptime("{} {}".format(form.endDate.data, form.endTime.data), "%Y-%m-%d %H:%M:%S")
+        for i in LeaveLog.query.filter_by(staff_id=current_user.id):
+            if Time.dateOverlap(start, end, i.start, i.end):
+                flash('Your leave date is overlap.')
+                return redirect(url_for('.askLeave'))
         log = LeaveLog( start=start, end=end, duration=round(Time.workingHours_days(start, end)/3600, 2), reason=form.reason.data, 
                         department_id= current_user.department_id, type_id=form.leave_type.data, staff_id=current_user.id, agent_id=form.agents.data)
         db.session.add(log)
@@ -92,8 +96,6 @@ def reviewLeave(token):
     if current_user.review_leave(token):
         db.session.commit()
         flash('You have updated the vacation log. Thanks!')
-    else:
-        flash('The review leave link is invalid or has expired.')
     return redirect(url_for('main.index'))
 
 @main.route('/leaveLog', methods=['GET', 'POST'])

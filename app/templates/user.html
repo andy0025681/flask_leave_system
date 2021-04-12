@@ -7,6 +7,7 @@
     <img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}">
     <div class="profile-header">
         <h1>{{ user.username }}</h1>
+        {% if user.department %}{{ user.department.name }}<br>{% endif %}
         {% if user.name or user.location %}
         <p>
             {% if user.name %}{{ user.name }}<br>{% endif %}
@@ -19,6 +20,7 @@
         <p><a href="mailto:{{ user.email }}">{{ user.email }}</a></p>
         {% endif %}
         {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+        <p>特休 {{ moment(user.off_leave_start).format('YYYY/MM/DD') }} ~ {{ moment(user.off_leave_end).format('YYYY/MM/DD') }}，有{{ user.officalLeave }}天</p>
         <p>Member since {{ moment(user.member_since).format('L') }}. Last seen {{ moment(user.last_seen).fromNow() }}.</p>
         <p>
             {% if user == current_user %}

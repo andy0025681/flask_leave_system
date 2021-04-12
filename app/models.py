@@ -3,7 +3,7 @@ import calendar
 import hashlib
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from flask import current_app
+from flask import current_app, flash
 from flask_login import UserMixin
 from . import db, login_manager
 
@@ -49,6 +49,13 @@ class Time():
             day = end.day - start.day
         # print("{}-{}-{}".format(year, month, day))
         return [year, month, day]
+
+    # 日期重疊
+    @staticmethod
+    def dateOverlap(s1, e1, s2, e2):
+        if (s1 >= s2 and s1 <= e2) or (s1 <= s2 and e1 >= s2):
+            return True
+        return False
 
     # 是否為工作日。
     @staticmethod
@@ -250,6 +257,27 @@ class LeaveLog(db.Model):
     staff_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     agent_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
+    def update_status(self, status):
+        if status != Status.TURN_DOWN and status != Status.AGREE:
+            flash('The review leave link is invalid or has expired.')
+            return False
+        elif self.status == status:
+            flash('Leave status unchanged.')
+            return False
+        else:
+            if self.status == Status.UNDER_REVIEW or self.status == Status.TURN_DOWN:
+                if status == Status.AGREE:
+                    if self.type.name == '特休假':
+                        if (self.duration/8.0) > self.staff.officalLeave:
+                            flash('Insufficient vacation.')
+                            return False
+                        self.staff.officalLeave = round(self.staff.officalLeave - self.duration/8, 1)
+            elif self.status == Status.AGREE and status == Status.TURN_DOWN:
+                if self.type.name == '特休假':
+                    self.staff.officalLeave = round(self.staff.officalLeave + self.duration/8, 1)
+            self.status = status
+        return True
+
     def __init__(self, **kwargs):
         super(LeaveLog, self).__init__(**kwargs)
         if self.status is None:
@@ -358,15 +386,17 @@ class User(UserMixin, db.Model):
         try:
             data = s.loads(token.encode('utf-8'))
         except:
+            flash('The review leave link is invalid or has expired.')
             return False
         if data.get('admin_id') != self.id:
-            return False
-        if data.get('status') != Status.TURN_DOWN and data.get('status') != Status.AGREE:
+            flash('The review leave link is invalid or has expired.')
             return False
         leaveLog = LeaveLog.query.filter_by(id=data.get('leaveLog')).first()
         if leaveLog is None:
+            flash('The review leave link is invalid or has expired.')
             return False
-        leaveLog.status = data.get('status')
+        if not leaveLog.update_status(data.get('status')):
+            return False
         db.session.add(leaveLog)
         return True
 
