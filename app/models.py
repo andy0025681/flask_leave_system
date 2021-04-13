@@ -27,7 +27,7 @@ class Time():
     @staticmethod
     def dateInterval(start, end):
         if(start > end):
-            return False
+            raise AttributeError('Dates are in wrong order.')
         year = end.year - start.year
         month = day = 0
         if(start.month > end.month):
@@ -128,45 +128,49 @@ class OfficalLeave:
     @staticmethod
     def seniorityToLeave(start, end):
         seniority = Time.dateInterval(start, end)
-        if(not seniority):
-            return -1
         buf = [ False, 7, 10, 14, 14, # 0~4年
                 15, 15, 15, 15, 15, # 5~9年
                 16, 17, 18, 19, 20, # 10~14年
                 21, 22, 23, 24, 25, # 15~19年
                 26, 27, 28, 29, 30 ] # 20~24年以上
         if(seniority[0] >= 1):
-            return buf[seniority[0]]
+            return buf[seniority[0]] if seniority[0] <= 24 else buf[-1]
         else:
             return 3 if(seniority[1] > 0 or seniority[2] > 0) else 0
 
     # 年資比例: 用來計算特休比例。年資比例依照到職日劃分為上半年與下半年。
     @staticmethod
     def yearProportion(firstDay, seniorityRange):
-        res = ((firstDay.month - 1) + (firstDay.day - 1) / calendar.monthrange(firstDay.year, firstDay.month)[1]) / seniorityRange
-        return 1 if res > 1 else res
+        m = firstDay.month - 1 if firstDay.month != 2 and firstDay.day != 29 else firstDay.month
+        d = firstDay.day - 1 if firstDay.month != 2 and firstDay.day != 29 else 0
+        buf = 0
+        if firstDay.day > 1:
+            buf = calendar.monthrange(firstDay.year, firstDay.month)[1]
+        else:
+            if firstDay.month > 1:
+                buf = calendar.monthrange(firstDay.year, firstDay.month-1)[1]
+            else:
+                buf = 31
+
+        res = (m + d / buf) / seniorityRange
+        return res if res < 1 else 1
     
-    # 以到職日計算某年特休開放日期。
+    # 以到職日計算特休開放日期。
     @staticmethod
-    def startDate(firstDay, thatYear):
-        if(firstDay >= datetime.strptime('{}-1-1'.format(thatYear+1), '%Y-%m-%d')):
-            return False
-        thatYear = datetime.strptime('{}-1-1'.format(thatYear), '%Y-%m-%d')
-        month = firstDay.month+6
-        year = firstDay.year
-        if(month > 12):
-            month -= 12
-            year += 1
-        firstOffStartDate = datetime.strptime('{}-{}-{}'.format(year, month, firstDay.day), '%Y-%m-%d')
-        return thatYear if(firstOffStartDate < thatYear) else firstOffStartDate
+    def firstDateOfUse(firstDay):
+        if firstDay.month > 6:
+            return [False, False]
+        else:
+            return [datetime.strptime('{}-{}-{}'.format(firstDay.year, firstDay.month+6, firstDay.day), '%Y-%m-%d'),
+                    datetime.strptime('{}-12-31'.format(firstDay.year), '%Y-%m-%d')]
 
     # 以到職日計算某年特休天數 (新年限定)
     @staticmethod
     def newYear(firstDay, thatYear):
         result = 0
         firstYear = datetime.strptime('{}-01-01'.format(thatYear), '%Y-%m-%d')
-        if(firstDay > firstYear):
-            return False
+        if(firstDay >= firstYear):
+            raise AttributeError('first day is wrong.')
         nextYear = thatYear + 1
         # 去年開始的年資的下半部分
         offLeave = OfficalLeave.seniorityToLeave(firstDay, firstYear)
@@ -181,22 +185,21 @@ class OfficalLeave:
         thisOffLeave = offLeave - (OfficalLeave.yearProportion(firstDay, seniorityRange) * offLeave)
         result += thisOffLeave
         result = round(round(round(result, 3), 2), 1)
-        return [datetime.strptime('{}-01-01'.format(thatYear), '%Y-%m-%d'), datetime.strptime('{}-12-31'.format(thatYear), '%Y-%m-%d'), result]
+        return [datetime.strptime('{}-01-01'.format(thatYear), '%Y-%m-%d'),
+                datetime.strptime('{}-12-31'.format(thatYear), '%Y-%m-%d'),
+                result]
 
     # 以到職日計算當年計算特休天數 (新員工限定)
     @staticmethod
     def newStaff(firstDay):
-        start = OfficalLeave.startDate(firstDay, firstDay.year)
-        end = datetime.strptime('{}-12-31'.format(firstDay.year), '%Y-%m-%d')
-        if(start > end):
-            return [False, False, 0]
+        result = OfficalLeave.firstDateOfUse(firstDay)
         thisYear = datetime.strptime('{}-12-31'.format(firstDay.year), '%Y-%m-%d')
         # 今年開始的年資的上半部分
         offLeave = OfficalLeave.seniorityToLeave(firstDay, thisYear)
         seniorityRange = 6 if offLeave <= 3 else 12
-        result = offLeave - (OfficalLeave.yearProportion(firstDay, seniorityRange) * offLeave)
-        result = round(round(round(result, 3), 2), 1)
-        return [start, end, result]
+        buf = offLeave - (OfficalLeave.yearProportion(firstDay, seniorityRange) * offLeave)
+        result.append(round(round(round(buf, 3), 2), 1))
+        return result
 
 class LeaveType(db.Model):
     __tablename__ = 'leave_types'

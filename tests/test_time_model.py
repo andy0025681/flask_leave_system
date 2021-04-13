@@ -15,14 +15,19 @@ class TimeModelTestCase(unittest.TestCase):
                 ('2021-01-01', '2021-01-01', [0, 0, 0]),
                 ('2016-02-29', '2021-01-01', [4, 10, 3]),
                 ('2016-01-16', '2021-01-01', [4, 11, 16]),
-                ('2020-11-16', '2021-01-01', [0, 1, 16]),
-                ('2021-11-16', '2021-01-01', False),
+                ('2020-11-16', '2021-01-01', [0, 1, 16])
             ]
         fmt = '%Y-%m-%d'
         for s, e, a in l:
             start = datetime.strptime(s, fmt)
             end = datetime.strptime(e, fmt)
             self.assertEqual(a, Time.dateInterval(start, end))
+
+    def test_date_Interval_date_order_check(self):
+        start = datetime.strptime('2021-02-01', '%Y-%m-%d')
+        end = datetime.strptime('2021-01-01', '%Y-%m-%d')
+        with self.assertRaises(AttributeError):
+            Time.dateInterval(start, end)
 
     def test_date_overlap(self):
         l = [
