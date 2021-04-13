@@ -53,6 +53,8 @@ class Time():
     # 日期重疊
     @staticmethod
     def dateOverlap(s1, e1, s2, e2):
+        if s1 > e1 or s2 > e2:
+            raise AttributeError('Dates are in wrong order.')
         if (s1 >= s2 and s1 <= e2) or (s1 <= s2 and e1 >= s2):
             return True
         return False
@@ -72,7 +74,7 @@ class Time():
         afterNoon = datetime.strptime('13:00:00', fmt)
         evening = datetime.strptime('18:00:00', fmt)
         if(st >= et or st > evening):
-            return 0
+            raise AttributeError('Wrong time range.')
         elif(st < datetime.strptime('09:00:00', fmt)):
             st = datetime.strptime('09:00:00', fmt)
         if(st < noon):
@@ -101,7 +103,7 @@ class Time():
     def workingHours_days(start, end):
         seconds = 0
         if(start >= end):
-            return 0
+            raise AttributeError('Dates are in wrong order.')
         sd = date = datetime.strptime(start.strftime('%Y-%m-%d'), '%Y-%m-%d')
         ed = datetime.strptime(end.strftime('%Y-%m-%d'), '%Y-%m-%d')
         while(date <= ed):
