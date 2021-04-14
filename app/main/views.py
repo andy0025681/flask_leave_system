@@ -75,8 +75,9 @@ def askLeave():
             if Time.dateOverlap(start, end, i.start, i.end):
                 flash('Your leave date is overlap.')
                 return redirect(url_for('.askLeave'))
-        log = LeaveLog( start=start, end=end, duration=round(Time.workingHours_days(start, end)/3600, 2), reason=form.reason.data, 
-                        department_id= current_user.department_id, type_id=form.leave_type.data, staff_id=current_user.id, agent_id=form.agents.data)
+        log = LeaveLog( start=start, end=end, reason=form.reason.data, 
+                        department_id=current_user.department_id, type_id=form.leave_type.data, 
+                        staff_id=current_user.id, agent_id=form.agents.data)
         db.session.add(log)
         db.session.commit()
         reviewer = current_user.department.supervisor() \

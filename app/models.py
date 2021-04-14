@@ -262,6 +262,12 @@ class LeaveLog(db.Model):
     staff_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     agent_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
+    def __init__(self, **kwargs):
+        super(LeaveLog, self).__init__(**kwargs)
+        if self.status is None:
+            self.status = Status.UNDER_REVIEW
+        self.duration=round(Time.workingHours_days(self.start, self.end)/3600, 2)
+
     def update_status(self, status):
         if status != Status.TURN_DOWN and status != Status.AGREE:
             flash('The review leave link is invalid or has expired.')
@@ -282,11 +288,6 @@ class LeaveLog(db.Model):
                     self.staff.officalLeave = round(self.staff.officalLeave + self.duration/8, 1)
             self.status = status
         return True
-
-    def __init__(self, **kwargs):
-        super(LeaveLog, self).__init__(**kwargs)
-        if self.status is None:
-            self.status = Status.UNDER_REVIEW
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -441,10 +442,10 @@ class Department(db.Model):
     @staticmethod
     def insert_department():
         departments = {
-            'HR 人資部門': [],
-            'IT 資訊科技部門': [],
-            'RD 研發部門': [],
-            'PR 公關部門': [],
+            '人資部門': [],
+            '資訊科技部門': [],
+            '研發部門': [],
+            '公關部門': [],
             '客服部': [],
             '行銷部': [],
             '培訓部': [],

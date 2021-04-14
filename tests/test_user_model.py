@@ -4,7 +4,6 @@ from datetime import datetime
 from app import create_app, db
 from app.models import User, Role, Permission
 
-
 class UserModelTestCase(unittest.TestCase):
     def setUp(self):
         self.app = create_app('testing')
