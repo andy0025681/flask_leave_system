@@ -22,6 +22,17 @@ def user(username):
     user = User.query.filter_by(username=username).first_or_404()
     return render_template('user.html', user=user)
 
+@main.route('/user/list')
+@login_required
+def user_list():
+    page = request.args.get('page', 1, type=int)
+    query=User.query
+    pagination = query.order_by(User.id).paginate(
+                page, per_page=current_app.config['FLASKY_USER_PER_PAGE'],
+                error_out=False)
+    users = pagination.items
+    return render_template('user_list.html', users=users)
+
 @main.route('/edit-profile', methods=['GET', 'POST'])
 @login_required
 def edit_profile():

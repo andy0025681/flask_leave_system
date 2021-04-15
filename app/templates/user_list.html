@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+
+{% block title %}Leave System - Edit User{% endblock %}
+
+{% block page_content %}
+<div class="post-tabs">
+    {% include 'auth/_userLogs.html' %}
+</div>
+{% if pagination %}
+<div class="pagination">
+    {{ macros.pagination_widget(pagination, 'auth.edit_user') }}
+</div>
+{% endif %}
+{% endblock %}
