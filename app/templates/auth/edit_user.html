@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+
+{% block title %}Leave System - Edit User{% endblock %}
+
+{% block page_content %}
+<div class="post-tabs">
+    <ul class="nav nav-tabs">
+        {% if current_user.can(Permission.EDIT_USER) %}
+            <li {% if edit_user_status == '0' %}class="active"{% endif %}><a href="{{ url_for('auth.show_register') }}">新增用戶</a></li>
+            <li {% if edit_user_status == '1' %}class="active"{% endif %}><a href="{{ url_for('auth.show_all_user') }}">用戶清單</a></li>
+        {% endif %}
+    </ul><br>
+    {% if edit_user_status == '0' %}
+    <div class="col-md-4">
+        {{ wtf.quick_form(form) }}
+    </div>
+    {% elif edit_user_status == '1' %}
+    {% include 'auth/_userLogs.html' %}
+    {% endif %}
+</div>
+{% if edit_user_status == '1' %}
+{% if pagination %}
+<div class="pagination">
+    {{ macros.pagination_widget(pagination, 'auth.edit_user') }}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

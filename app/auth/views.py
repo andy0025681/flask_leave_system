@@ -1,10 +1,11 @@
-from flask import render_template, redirect, request, url_for, flash
+from flask import render_template, redirect, request, url_for, flash, make_response, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from . import auth
 from .. import db
 from ..models import User
 from ..email import send_email
-from .forms import LoginForm, ChangePasswordForm, PasswordResetRequestForm, PasswordResetForm, ChangeEmailForm
+from .forms import LoginForm, ChangePasswordForm, PasswordResetRequestForm, PasswordResetForm, ChangeEmailForm, RegistrationForm
+from ..decorators import hr_required
 
 @auth.before_app_request
 def before_request():
@@ -105,3 +106,48 @@ def change_email(token):
     else:
         flash('Invalid request.')
     return redirect(url_for('main.index'))
+
+@auth.route('/edit-user', methods=['GET', 'POST'])
+@login_required
+@hr_required
+def edit_user():
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User(email=form.email.data.lower(),
+                    username=form.username.data,
+                    password=form.password.data,
+                    department_id=form.department.data,
+                    gender=form.gender.data)
+        db.session.add(user)
+        db.session.commit()
+        send_email(user.email, '請假系統帳號',
+                   'auth/email/new_user_email', form=form)
+        flash('已新增帳號並發送通知郵件。')
+        return redirect(url_for('auth.edit_user'))
+    edit_user_status = request.cookies.get('edit_user_status', '')
+    if edit_user_status == '0':
+        return render_template('auth/edit_user.html', edit_user_status=edit_user_status, form=form)
+    elif edit_user_status == '1':
+        page = request.args.get('page', 1, type=int)
+        query=User.query
+        pagination = query.order_by(User.id).paginate(
+                    page, per_page=current_app.config['FLASKY_USER_PER_PAGE'],
+                    error_out=False)
+        users = pagination.items
+        return render_template('auth/edit_user.html', edit_user_status=edit_user_status, users=users, pagination=pagination)
+
+@auth.route('/register')
+@login_required
+@hr_required
+def show_register():
+    resp = make_response(redirect(url_for('auth.edit_user')))
+    resp.set_cookie('edit_user_status', '0', max_age=30*24*60*60)
+    return resp
+
+@auth.route('/allUser')
+@login_required
+@hr_required
+def show_all_user():
+    resp = make_response(redirect(url_for('auth.edit_user')))
+    resp.set_cookie('edit_user_status', '1', max_age=30*24*60*60)
+    return resp

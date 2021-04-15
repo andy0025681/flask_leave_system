@@ -1,0 +1,5 @@
+嗨! 新使用者，歡迎使用請假系統
+帳號: {{ form.username.data }}
+密碼: {{ form.password.data }}
+登入:
+{{ url_for('auth.login', _external=True) }}

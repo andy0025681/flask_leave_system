@@ -1,0 +1,21 @@
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">帳號</th>
+            <th scope="col">部門</th>
+            <th scope="col">電子郵件</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <!-- 帳號 -->
+            <td><a href="{{ url_for('main.user', username=user.username) }}">{{ user.username }}</a></td>
+            <!-- 部門 -->
+            <td>{{ user.department.name }}</td>
+            <!-- 電子郵件 -->
+            <td>{{ user.email }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
