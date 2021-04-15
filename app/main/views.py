@@ -159,3 +159,7 @@ def show_department_log():
     resp = make_response(redirect(url_for('.leaveLog')))
     resp.set_cookie('log_status', '3', max_age=30*24*60*60)
     return resp
+
+@main.route('/bad')
+def bad():
+    abort(500)
