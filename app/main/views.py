@@ -2,11 +2,15 @@ from datetime import datetime
 from flask import render_template, redirect, url_for, abort, flash, request, current_app, make_response
 from flask_login import login_required, current_user
 from . import main
-from .forms import MainForm, EditProfileForm, EditProfileAdminForm, AskLeaveForm
+from .forms import MainForm, EditProfileForm, EditProfileAdminForm, AskLeaveForm, WorkHolidayForm
 from .. import db
-from ..models import Permission, User, Role, LeaveLog, Time, Status
+from ..models import Permission, User, Role, LeaveLog, Time, Status, WorkOrHoliday
 from ..email import send_email
 from ..decorators import admin_required, permission_required
+
+@main.route('/bad')
+def bad():
+    abort(500)
 
 @main.route('/', methods=['GET', 'POST'])
 @login_required
@@ -43,7 +47,7 @@ def edit_profile():
         current_user.about_me = form.about_me.data
         db.session.add(current_user._get_current_object())
         db.session.commit()
-        flash('Your profile has been updated.')
+        flash('你的個人資料已經更新。')
         return redirect(url_for('.user', username=current_user.username))
     form.name.data = current_user.name
     form.location.data = current_user.location
@@ -65,7 +69,7 @@ def edit_profile_admin(id):
         user.about_me = form.about_me.data
         db.session.add(user)
         db.session.commit()
-        flash('The profile has been updated.')
+        flash('個人資料已經更新。')
         return redirect(url_for('.user', username=user.username))
     form.email.data = user.email
     form.username.data = user.username
@@ -84,7 +88,7 @@ def askLeave():
         end=datetime.strptime("{} {}".format(form.endDate.data, form.endTime.data), "%Y-%m-%d %H:%M:%S")
         for i in LeaveLog.query.filter_by(staff_id=current_user.id):
             if Time.dateOverlap(start, end, i.start, i.end):
-                flash('Your leave date is overlap.')
+                flash('你的休假日期有重疊。')
                 return redirect(url_for('.askLeave'))
         log = LeaveLog( start=start, end=end, reason=form.reason.data, 
                         department_id=current_user.department_id, type_id=form.leave_type.data, 
@@ -98,7 +102,7 @@ def askLeave():
         turn_down_token = reviewer.generate_review_leave_token(log, Status.TURN_DOWN)
         send_email(reviewer.email, '請假申請函',
                    'email/askLeave', user=reviewer, applicant=current_user, leaveLog=log, agree_token=agree_token, turn_down_token=turn_down_token)
-        flash('Your leave request has been under review.')
+        flash('請假申請已在審核中。')
         return redirect(url_for('.askLeave'))
     return render_template('askLeave.html', form=form)
 
@@ -107,7 +111,7 @@ def askLeave():
 def reviewLeave(token):
     if current_user.review_leave(token):
         db.session.commit()
-        flash('You have updated the vacation log. Thanks!')
+        flash('你已經更新了假期日誌。 謝謝！')
     return redirect(url_for('main.index'))
 
 @main.route('/leaveLog', methods=['GET', 'POST'])
@@ -117,12 +121,12 @@ def leaveLog():
     log_status = request.cookies.get('log_status', '')
     if log_status == '0':
         query = LeaveLog.query
-    elif log_status == '1':
-        query = current_user.ask_leave
     elif log_status == '2':
         query = current_user.agent
-    else:
+    elif log_status == '3':
         query = current_user.department.leaveLogs
+    else:
+        query = current_user.ask_leave
     pagination = query.order_by(LeaveLog.timestamp.desc()).paginate(
         page, per_page=current_app.config['FLASKY_LEAVE_LOG_PER_PAGE'],
         error_out=False)
@@ -160,6 +164,48 @@ def show_department_log():
     resp.set_cookie('log_status', '3', max_age=30*24*60*60)
     return resp
 
-@main.route('/bad')
-def bad():
-    abort(500)
+@main.route('/work_or_holiday', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def work_or_holiday():
+    form = WorkHolidayForm()
+    if form.validate_on_submit():
+        start = datetime.strptime("{} 00:00:00".format(form.startDate.data), "%Y-%m-%d %H:%M:%S")
+        end=datetime.strptime("{} 23:59:59".format(form.endDate.data), "%Y-%m-%d %H:%M:%S")
+        today = datetime.strptime(datetime.today().strftime('%Y-%m-%d'), '%Y-%m-%d')
+        for i in WorkOrHoliday.query.filter(WorkOrHoliday.end>=today):
+            if Time.dateOverlap(start, end, i.start, i.end):
+                flash('紀錄重疊')
+                return redirect(url_for('.work_or_holiday'))
+        print(form.workday.data)
+        log = WorkOrHoliday(start=start, end=end, reason=form.reason.data, workday=int(form.workday.data))
+        db.session.add(log)
+        db.session.commit()
+        flash('已新增事件')
+        return redirect(url_for('.work_or_holiday'))
+    work_or_holiday_status = request.cookies.get('work_or_holiday_status', '')
+    if work_or_holiday_status == '1':
+        page = request.args.get('page', 1, type=int)
+        query=WorkOrHoliday.query
+        pagination = query.order_by(WorkOrHoliday.end.desc()).paginate(
+                    page, per_page=current_app.config['FLASKY_WORK_OR_HOLIDAY_PER_PAGE'],
+                    error_out=False)
+        logs = pagination.items
+        return render_template('work_or_holiday.html', work_or_holiday_status=work_or_holiday_status, logs=logs, pagination=pagination)
+    return render_template('work_or_holiday.html', form=form, work_or_holiday_status=work_or_holiday_status)
+
+@main.route('/work_or_holiday_log')
+@login_required
+@admin_required
+def show_work_or_holiday_log():
+    resp = make_response(redirect(url_for('.work_or_holiday')))
+    resp.set_cookie('work_or_holiday_status', '0', max_age=30*24*60*60)
+    return resp
+
+@main.route('/work_or_holiday_form')
+@login_required
+@admin_required
+def show_work_or_holiday_form():
+    resp = make_response(redirect(url_for('.work_or_holiday')))
+    resp.set_cookie('work_or_holiday_status', '1', max_age=30*24*60*60)
+    return resp

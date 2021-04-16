@@ -23,14 +23,14 @@ def login():
             if next is None or not next.startswith('/'):
                 next = url_for('main.index')
             return redirect(next)
-        flash('Invalid email or password.')
+        flash('無效的電子郵件或密碼。')
     return render_template('auth/login.html', form=form)
 
 @auth.route('/logout')
 @login_required
 def logout():
     logout_user()
-    flash('You have been logged out.')
+    flash('你已登出。')
     return redirect(url_for('.login'))
 
 @auth.route('/change-password', methods=['GET', 'POST'])
@@ -42,10 +42,10 @@ def change_password():
             current_user.password = form.password.data
             db.session.add(current_user)
             db.session.commit()
-            flash('Your password has been updated.')
+            flash('你的密碼已更新。')
             return redirect(url_for('main.index'))
         else:
-            flash('Invalid password.')
+            flash('無效的密碼。')
     return render_template("auth/change_password.html", form=form)
 
 @auth.route('/reset', methods=['GET', 'POST'])
@@ -60,8 +60,7 @@ def password_reset_request():
             send_email(user.email, 'Reset Your Password',
                        'auth/email/reset_password',
                        user=user, token=token)
-        flash('An email with instructions to reset your password has been '
-              'sent to you.')
+        flash('已發送重置密碼電子郵件。')
         return redirect(url_for('auth.login'))
     return render_template('auth/reset_password.html', form=form)
 
@@ -73,7 +72,7 @@ def password_reset(token):
     if form.validate_on_submit():
         if User.reset_password(token, form.password.data):
             db.session.commit()
-            flash('Your password has been updated.')
+            flash('你的密碼已更新。')
             return redirect(url_for('auth.login'))
         else:
             return redirect(url_for('main.index'))
@@ -90,11 +89,10 @@ def change_email_request():
             send_email(new_email, 'Confirm your email address',
                        'auth/email/change_email',
                        user=current_user, token=token)
-            flash('An email with instructions to confirm your new email '
-                  'address has been sent to you.')
+            flash('已發送重置email地址的電子郵件。')
             return redirect(url_for('main.index'))
         else:
-            flash('Invalid email or password.')
+            flash('無效的電子郵件或密碼。')
     return render_template("auth/change_email.html", form=form)
 
 @auth.route('/change_email/<token>')
@@ -102,9 +100,9 @@ def change_email_request():
 def change_email(token):
     if current_user.change_email(token):
         db.session.commit()
-        flash('Your email address has been updated.')
+        flash('你的電子郵件地址已更新。')
     else:
-        flash('Invalid request.')
+        flash('無效的請求。')
     return redirect(url_for('main.index'))
 
 @auth.route('/edit-user', methods=['GET', 'POST'])
@@ -125,9 +123,7 @@ def edit_user():
         flash('已新增帳號並發送通知郵件。')
         return redirect(url_for('auth.edit_user'))
     edit_user_status = request.cookies.get('edit_user_status', '')
-    if edit_user_status == '0':
-        return render_template('auth/edit_user.html', edit_user_status=edit_user_status, form=form)
-    elif edit_user_status == '1':
+    if edit_user_status == '1':
         page = request.args.get('page', 1, type=int)
         query=User.query
         pagination = query.order_by(User.id).paginate(
@@ -135,6 +131,7 @@ def edit_user():
                     error_out=False)
         users = pagination.items
         return render_template('auth/edit_user.html', edit_user_status=edit_user_status, users=users, pagination=pagination)
+    return render_template('auth/edit_user.html', edit_user_status=edit_user_status, form=form)
 
 @auth.route('/register')
 @login_required

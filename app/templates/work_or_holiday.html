@@ -7,20 +7,20 @@
 {% block page_content %}
 <div class="post-tabs">
     <ul class="nav nav-tabs">
-        {% if current_user.can(Permission.EDIT_USER) %}
-            <li {% if edit_user_status == '0' %}class="active"{% endif %}><a href="{{ url_for('auth.show_register') }}">新增用戶</a></li>
-            <li {% if edit_user_status == '1' %}class="active"{% endif %}><a href="{{ url_for('auth.show_all_user') }}">用戶清單</a></li>
+        {% if current_user.can(Permission.ADMIN) %}
+            <li {% if work_or_holiday_status == '0' %}class="active"{% endif %}><a href="{{ url_for('main.show_work_or_holiday_log') }}">新增事件</a></li>
+            <li {% if work_or_holiday_status == '1' %}class="active"{% endif %}><a href="{{ url_for('main.show_work_or_holiday_form') }}">紀錄</a></li>
         {% endif %}
     </ul><br>
-    {% if edit_user_status == '1' %}
-    {% include 'auth/_userLogs.html' %}
+    {% if work_or_holiday_status == '1' %}
+    {% include '_work_or_holiday_log.html' %}
     {% else %}
     <div class="col-md-4">
         {{ wtf.quick_form(form) }}
     </div>
     {% endif %}
 </div>
-{% if edit_user_status == '1' %}
+{% if work_or_holiday_status == '1' %}
 {% if pagination %}
 <div class="pagination">
     {{ macros.pagination_widget(pagination, 'auth.edit_user') }}

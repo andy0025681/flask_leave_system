@@ -22,6 +22,22 @@ class Status:
     TURN_DOWN = 2
     AGREE = 4
 
+class WorkOrHoliday(db.Model):
+    __tablename__ = 'work_or_holiday'
+    id = db.Column(db.Integer, primary_key=True)
+    start = db.Column(db.DateTime)
+    end = db.Column(db.DateTime)
+    reason = db.Column(db.Text)
+    workday = db.Column(db.Integer)
+
+    @staticmethod
+    def not_workday(date):
+        log = WorkOrHoliday.query.filter(WorkOrHoliday.start <= date, WorkOrHoliday.end >= date).first()
+        if log:
+            return (not log.workday) or (date.weekday() >= 5 and not log.workday)
+        else:
+            return date.weekday() >= 5
+        
 class Time():
     # 日期間格。
     @staticmethod
@@ -58,11 +74,6 @@ class Time():
         if (s1 >= s2 and s1 <= e2) or (s1 <= s2 and e1 >= s2):
             return True
         return False
-
-    # 是否為工作日。
-    @staticmethod
-    def workday():
-        return True
 
     # 當日工時。
     @staticmethod
@@ -107,8 +118,8 @@ class Time():
         sd = date = datetime.strptime(start.strftime('%Y-%m-%d'), '%Y-%m-%d')
         ed = datetime.strptime(end.strftime('%Y-%m-%d'), '%Y-%m-%d')
         while(date <= ed):
-            # if(not Time.workday() and (date.weekday() >= 5 and not Time.workday())):
-            if(date.weekday() >= 5):
+            # if(date.weekday() >= 5):
+            if(WorkOrHoliday.not_workday(date)):
                 date += timedelta(days=1)
                 continue
             if(date == sd):

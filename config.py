@@ -15,6 +15,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     FLASKY_LEAVE_LOG_PER_PAGE = 10
     FLASKY_USER_PER_PAGE = 10
+    FLASKY_WORK_OR_HOLIDAY_PER_PAGE = 10
 
     @staticmethod
     def init_app(app):

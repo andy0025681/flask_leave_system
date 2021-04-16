@@ -1,0 +1,27 @@
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">事件</th>
+            <th scope="col">期間</th>
+            <th scope="col">原因</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in logs %}
+        <tr>
+            <!-- 事件 -->
+            {% if log.workday == 0 %}
+            <td>放假</td>
+            {% else %}
+            <td>上班</td>
+            {% endif %}
+            <!-- 期間 -->
+            <td>
+                <p>{{ log.start }} ~ {{ log.end }}</p>
+            </td>
+            <!-- 原因 -->
+            <td>{{ log.reason }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

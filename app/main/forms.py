@@ -65,3 +65,14 @@ class AskLeaveForm(FlaskForm):
                                 for u in User.query.filter_by(department_id=user.department_id).all()
                                 if u.id != user.id]
         self.user = user
+
+class WorkHolidayForm(FlaskForm):
+    workday = SelectField('事件', coerce=int, choices=[(0, '放假'), (1, '上班')])
+    startDate = DateField('起始日期:', default=datetime.today(), validators=[DataRequired()])
+    endDate = DateField('結束日期:', default=datetime.today(), validators=[DataRequired()])
+    reason = TextAreaField('原因:', validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+    def validate_startDate(self, field):
+        if datetime.strptime("{}".format(self.startDate.data), "%Y-%m-%d") > datetime.strptime("{}".format(self.endDate.data), "%Y-%m-%d"):
+            raise ValidationError('日期順序錯誤')

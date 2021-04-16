@@ -45,7 +45,7 @@ class MainClientTestCase(unittest.TestCase):
         # log out
         response = self.client.get('/auth/logout', follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertTrue('You have been logged out' in response.get_data(as_text=True))
+        self.assertTrue('你已登出。' in response.get_data(as_text=True))
 
     def test_change_password(self):
         # not login
@@ -224,7 +224,7 @@ class MainClientTestCase(unittest.TestCase):
         # log out
         response = self.client.get('/auth/logout', follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertTrue('You have been logged out' in response.get_data(as_text=True))
+        self.assertTrue('你已登出。' in response.get_data(as_text=True))
 
         # admin login
         response = self.client.post('/auth/login', data={
@@ -259,7 +259,7 @@ class MainClientTestCase(unittest.TestCase):
         # log out
         response = self.client.get('/auth/logout', follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertTrue('You have been logged out' in response.get_data(as_text=True))
+        self.assertTrue('你已登出。' in response.get_data(as_text=True))
 
         # admin login
         response = self.client.post('/auth/login', data={
