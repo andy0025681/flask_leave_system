@@ -9,13 +9,15 @@ class Config:
         ['true', 'on', '1']
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    FLASKY_MAIL_SUBJECT_PREFIX = '[Flasky]'
-    FLASKY_MAIL_SENDER = 'Flasky Admin {}'.format(os.environ.get('MAIL_USERNAME'))
-    FLASKY_ADMIN = os.environ.get('FLASKY_ADMIN')
+    FLASK_MAIL_SUBJECT_PREFIX = '[Leave System]'
+    FLASK_MAIL_SENDER = 'Leave System Admin {}'.format(os.environ.get('MAIL_USERNAME'))
+    FLASK_ADMIN = os.environ.get('FLASK_ADMIN')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    FLASKY_LEAVE_LOG_PER_PAGE = 10
-    FLASKY_USER_PER_PAGE = 10
-    FLASKY_WORK_OR_HOLIDAY_PER_PAGE = 10
+    FLASK_LEAVE_LOG_PER_PAGE = 10
+    FLASK_USER_PER_PAGE = 10
+    FLASK_WORK_OR_HOLIDAY_PER_PAGE = 10
+    FLASK_POSTS_PER_PAGE = 20
+    FLASK_COMMENTS_PER_PAGE = 30
 
     @staticmethod
     def init_app(app):

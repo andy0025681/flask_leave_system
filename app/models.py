@@ -3,15 +3,20 @@ import calendar
 import hashlib
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from markdown import markdown
+import bleach
 from flask import current_app, flash
 from flask_login import UserMixin
 from . import db, login_manager
 
 class Permission:
-    ASK_LEAVE = 1
-    REVIEW_LEAVE = 2
-    EDIT_USER = 4
-    ADMIN = 8
+    COMMENT = 1
+    WRITE = 2
+    MODERATE = 4
+    ASK_LEAVE = 8
+    REVIEW_LEAVE = 16
+    EDIT_USER = 32
+    ADMIN = 64
 
 class Gender:
     MALE = 1
@@ -329,11 +334,13 @@ class User(UserMixin, db.Model):
             backref=db.backref('agent', lazy='joined'),
             lazy='dynamic',
             cascade='all, delete-orphan')
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
+    comments = db.relationship('Comment', backref='author', lazy='dynamic')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
         if self.role is None:
-            if self.email == current_app.config['FLASKY_ADMIN']:
+            if self.email == current_app.config['FLASK_ADMIN']:
                 self.role = Role.query.filter_by(name='Administrator').first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
@@ -496,9 +503,11 @@ class Role(db.Model):
     @staticmethod
     def insert_roles():
         roles = {
-            'Staff': [Permission.ASK_LEAVE],
-            'Supervisor': [Permission.ASK_LEAVE, Permission.REVIEW_LEAVE],
-            'Administrator': [Permission.ASK_LEAVE, Permission.REVIEW_LEAVE,
+            'Staff': [Permission.COMMENT, Permission.WRITE, Permission.ASK_LEAVE],
+            'Supervisor': [Permission.COMMENT, Permission.WRITE, Permission.MODERATE,
+                           Permission.ASK_LEAVE, Permission.REVIEW_LEAVE],
+            'Administrator': [Permission.COMMENT, Permission.WRITE, Permission.MODERATE,
+                              Permission.ASK_LEAVE, Permission.REVIEW_LEAVE,
                               Permission.EDIT_USER, Permission.ADMIN],
         }
         default_role = 'Staff'
@@ -533,3 +542,44 @@ class Role(db.Model):
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+class Post(db.Model):
+    __tablename__ = 'posts'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    body_html = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    comments = db.relationship('Comment', backref='post', lazy='dynamic')
+
+    @staticmethod
+    def on_changed_body(target, value, oldvalue, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code',
+                        'em', 'i', 'li', 'ol', 'pre', 'strong', 'ul',
+                        'h1', 'h2', 'h3', 'p']
+        target.body_html = bleach.linkify(bleach.clean(
+            markdown(value, output_format='html'),
+            tags=allowed_tags, strip=True))
+
+db.event.listen(Post.body, 'set', Post.on_changed_body)
+
+
+class Comment(db.Model):
+    __tablename__ = 'comments'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    body_html = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    disabled = db.Column(db.Boolean)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
+
+    @staticmethod
+    def on_changed_body(target, value, oldvalue, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'code', 'em', 'i',
+                        'strong']
+        target.body_html = bleach.linkify(bleach.clean(
+            markdown(value, output_format='html'),
+            tags=allowed_tags, strip=True))
+
+db.event.listen(Comment.body, 'set', Comment.on_changed_body)

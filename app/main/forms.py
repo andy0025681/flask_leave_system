@@ -5,10 +5,8 @@ from wtforms import StringField, TextAreaField, BooleanField, SelectField,\
 from wtforms.fields.html5 import DateField, TimeField
 from wtforms.validators import DataRequired, Length, Email, Regexp
 from wtforms import ValidationError
+from flask_pagedown.fields import PageDownField
 from ..models import LeaveType, Department, User, Role
-
-class MainForm(FlaskForm):
-    pass
 
 class EditProfileForm(FlaskForm):
     name = StringField('Real name', validators=[Length(0, 64)])
@@ -76,3 +74,11 @@ class WorkHolidayForm(FlaskForm):
     def validate_startDate(self, field):
         if datetime.strptime("{}".format(self.startDate.data), "%Y-%m-%d") > datetime.strptime("{}".format(self.endDate.data), "%Y-%m-%d"):
             raise ValidationError('日期順序錯誤')
+
+class PostForm(FlaskForm):
+    body = PageDownField("有什麼想說的嗎?", validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+class CommentForm(FlaskForm):
+    body = StringField('輸入你的評論', validators=[DataRequired()])
+    submit = SubmitField('Submit')

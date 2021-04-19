@@ -9,8 +9,9 @@ if os.environ.get('FLASK_COVERAGE'):
 import sys
 
 import click
-from flask_migrate import Migrate
+from flask_migrate import Migrate, upgrade
 from app import create_app, db
+from app.models import Permission, Gender, Status, Time, OfficalLeave, LeaveType, LeaveLog, User, Department, Role, Post, Comment
 
 app = create_app(os.getenv('FLASK_CONFIG') or 'default')
 
@@ -18,7 +19,11 @@ migrate = Migrate(app, db)
 
 @app.shell_context_processor
 def make_shell_context():
-    return dict(db=db)
+    return dict(db=db, 
+                Permission=Permission, Gender=Gender, Status=Status,
+                Time=Time, OfficalLeave=OfficalLeave,
+                LeaveType=LeaveType, LeaveLog=LeaveLog, User=User, Department=Department, Role=Role, 
+                Post=Post, Comment=Comment)
 
 @app.cli.command()
 @click.option('--coverage/--no-coverage', default=False,
@@ -47,3 +52,10 @@ def test(coverage, test_names):
         COV.html_report(directory=covdir)
         print('HTML version: file://%s/index.html' % covdir)
         COV.erase()
+
+@app.cli.command()
+def deploy():
+    upgrade()
+    Role.insert_roles()
+    LeaveType.insert_leave_type()
+    Department.insert_department()

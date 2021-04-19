@@ -127,7 +127,7 @@ def edit_user():
         page = request.args.get('page', 1, type=int)
         query=User.query
         pagination = query.order_by(User.id).paginate(
-                    page, per_page=current_app.config['FLASKY_USER_PER_PAGE'],
+                    page, per_page=current_app.config['FLASK_USER_PER_PAGE'],
                     error_out=False)
         users = pagination.items
         return render_template('auth/edit_user.html', edit_user_status=edit_user_status, users=users, pagination=pagination)
